@@ -1,10 +1,11 @@
 package com.pixledgerapi.controller;
 
 import com.pixledgerapi.dto.AccountDTO;
+import com.pixledgerapi.dto.AccountResponse;
 import com.pixledgerapi.dto.EntryDTO;
 import com.pixledgerapi.dto.EntryResponse;
+import com.pixledgerapi.dto.LedgerEntryResponse;
 import com.pixledgerapi.model.Account;
-import com.pixledgerapi.model.LedgerEntry;
 import com.pixledgerapi.service.AccountService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,12 +36,12 @@ public class AccountController {
     }
 
     @GetMapping("/{id}")
-    public Account getAccount(@PathVariable UUID id) {
+    public AccountResponse getAccount(@PathVariable UUID id) {
         return accountService.getAccount(id);
     }
 
     @GetMapping("/{id}/ledger")
-    public Page<LedgerEntry> getLedger(@PathVariable UUID id, Pageable pageable) {
+    public Page<LedgerEntryResponse> getLedger(@PathVariable UUID id, Pageable pageable) {
         return accountService.getLedger(id, pageable);
     }
 }

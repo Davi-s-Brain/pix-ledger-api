@@ -1,8 +1,10 @@
 package com.pixledgerapi.service;
 
 import com.pixledgerapi.dto.AccountDTO;
+import com.pixledgerapi.dto.AccountResponse;
 import com.pixledgerapi.dto.EntryDTO;
 import com.pixledgerapi.dto.EntryResponse;
+import com.pixledgerapi.dto.LedgerEntryResponse;
 import com.pixledgerapi.dto.TransferDTO;
 import com.pixledgerapi.dto.TransferResponse;
 import com.pixledgerapi.event.EntryCreatedEvent;
@@ -68,14 +70,14 @@ public class AccountService {
     }
 
     @Cacheable(value = "accounts", key = "#id")
-    public Account getAccount(UUID id) {
-        return findAccountOrThrow(id);
+    public AccountResponse getAccount(UUID id) {
+        return AccountResponse.from(findAccountOrThrow(id));
     }
 
     @Cacheable(value = "ledgers", key = "#id.toString() + ':' + #pageable")
-    public Page<LedgerEntry> getLedger(UUID id, Pageable pageable) {
+    public Page<LedgerEntryResponse> getLedger(UUID id, Pageable pageable) {
         findAccountOrThrow(id);
-        return ledgerEntryRepository.findByAccountId(id, pageable);
+        return ledgerEntryRepository.findByAccountId(id, pageable).map(LedgerEntryResponse::from);
     }
 
     /**

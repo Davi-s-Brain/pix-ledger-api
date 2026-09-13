@@ -81,22 +81,21 @@
     {
       "id": 8,
       "type": "timeseries",
-      "title": "Cache hit rate",
+      "title": "Erros 4xx / 5xx (por status)",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 24 },
-      "fieldConfig": { "defaults": { "unit": "percent" } },
       "targets": [
-        { "refId": "A", "expr": "sum(rate(cache_gets_total{result=\"hit\"}[5m])) / sum(rate(cache_gets_total[5m])) * 100", "legendFormat": "hit rate" }
+        { "refId": "A", "expr": "sum by (status) (rate(http_server_requests_seconds_count{status=~\"[45]..\"}[1m]))", "legendFormat": "{{status}}" }
       ]
     },
     {
       "id": 9,
       "type": "timeseries",
-      "title": "Cache gets / s (por cache e resultado)",
+      "title": "Registros Kafka consumidos / s (por tópico)",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 24 },
       "targets": [
-        { "refId": "A", "expr": "sum by (cache, result) (rate(cache_gets_total[1m]))", "legendFormat": "{{cache}} {{result}}" }
+        { "refId": "A", "expr": "sum by (topic) (rate(kafka_consumer_fetch_manager_records_consumed_total[1m]))", "legendFormat": "{{topic}}" }
       ]
     },
     {
