@@ -11,6 +11,8 @@ import com.pixledgerapi.model.EntryType;
 import com.pixledgerapi.model.LedgerEntry;
 import com.pixledgerapi.repository.AccountRepository;
 import com.pixledgerapi.repository.LedgerEntryRepository;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -50,6 +52,9 @@ public class AccountService {
     @Autowired
     private CacheManager cacheManager;
 
+    @Autowired
+    private MeterRegistry meterRegistry;
+
     // auto-referência com @Lazy: o retry precisa chamar o método transacional
     // através do proxy do Spring (self-invocation puro não passa pelo proxy)
     @Autowired
@@ -80,7 +85,16 @@ public class AccountService {
      * relê o saldo e tenta de novo (até MAX_RETRIES). Se ainda conflitar, 409.
      */
     public EntryResponse createEntry(UUID accountId, EntryDTO dto) {
-        return createEntryWithRetry(accountId, dto, MAX_RETRIES);
+        Timer.Sample sample = Timer.start(meterRegistry);
+        String result = "success";
+        try {
+            return createEntryWithRetry(accountId, dto, MAX_RETRIES);
+        } catch (ResponseStatusException e) {
+            result = entryResult(e.getStatusCode().value());
+            throw e;
+        } finally {
+            sample.stop(entryTimer(result));
+        }
     }
 
     private EntryResponse createEntryWithRetry(UUID accountId, EntryDTO dto, int attemptsLeft) {
@@ -132,6 +146,19 @@ public class AccountService {
      */
     @Transactional
     public TransferResponse transfer(TransferDTO dto) {
+        Timer.Sample sample = Timer.start(meterRegistry);
+        String result = "success";
+        try {
+            return doTransfer(dto);
+        } catch (ResponseStatusException e) {
+            result = transferResult(e.getStatusCode().value());
+            throw e;
+        } finally {
+            sample.stop(transferTimer(result));
+        }
+    }
+
+    private TransferResponse doTransfer(TransferDTO dto) {
         if (dto.sourceAccountId().equals(dto.destinationAccountId())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Conta de origem e destino devem ser diferentes");
         }
@@ -197,6 +224,37 @@ public class AccountService {
         if (ledgers != null) {
             ledgers.clear();
         }
+    }
+
+    private Timer transferTimer(String result) {
+        return Timer.builder("ledger.transfer.duration")
+                .tag("result", result)
+                .register(meterRegistry);
+    }
+
+    private Timer entryTimer(String result) {
+        return Timer.builder("ledger.entry.duration")
+                .tag("result", result)
+                .register(meterRegistry);
+    }
+
+    private String transferResult(int status) {
+        return switch (status) {
+            case 400 -> "same_account";
+            case 404 -> "not_found";
+            case 409 -> "inactive";
+            case 422 -> "insufficient";
+            default -> "http_" + status;
+        };
+    }
+
+    private String entryResult(int status) {
+        return switch (status) {
+            case 404 -> "not_found";
+            case 409 -> "conflict";
+            case 422 -> "insufficient";
+            default -> "http_" + status;
+        };
     }
 
     private Account findAccountOrThrow(UUID id) {

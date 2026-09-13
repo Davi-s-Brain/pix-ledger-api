@@ -2,6 +2,7 @@ package com.pixledgerapi.event;
 
 import com.pixledgerapi.model.EntryEvent;
 import com.pixledgerapi.repository.EntryEventRepository;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
@@ -17,9 +18,13 @@ public class LedgerEventConsumer {
     @Autowired
     private EntryEventRepository entryEventRepository;
 
+    @Autowired
+    private MeterRegistry meterRegistry;
+
     @KafkaListener(topics = LedgerEventPublisher.TOPIC, groupId = "ledger-projector")
     public void onEntryCreated(EntryCreatedEvent event) {
         if (entryEventRepository.existsById(event.entryId())) {
+            meterRegistry.counter("ledger.event.duplicated").increment();
             return;
         }
 
@@ -31,5 +36,7 @@ public class LedgerEventConsumer {
         projection.setDescription(event.description());
         projection.setOccurredAt(event.createdAt());
         entryEventRepository.save(projection);
+
+        meterRegistry.counter("ledger.event.consumed", "type", event.entryType().name()).increment();
     }
 }
