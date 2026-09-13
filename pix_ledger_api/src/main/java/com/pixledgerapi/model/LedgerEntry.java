@@ -1,5 +1,6 @@
 package com.pixledgerapi.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -26,14 +27,12 @@ import java.util.UUID;
 @NoArgsConstructor
 public class LedgerEntry {
 
-    public enum EntryType {
-        CREDIT, DEBIT
-    }
-
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    // JsonIgnore: não serializa a conta dentro da entry (evita LAZY proxy e redundância)
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "account_id", nullable = false)
     private Account account;
