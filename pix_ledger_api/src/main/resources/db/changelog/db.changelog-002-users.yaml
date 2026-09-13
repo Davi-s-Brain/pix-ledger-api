@@ -1,0 +1,39 @@
+databaseChangeLog:
+  - changeSet:
+      id: 002-users
+      author: davib
+      changes:
+        - createTable:
+            tableName: users
+            remarks: Tabela de usuários
+            columns:
+            - column:
+               name: id
+               type: UUID
+               defaultValueComputed: gen_random_uuid()
+               constraints:
+                 primaryKey: true
+                 nullable: false
+            - column:
+                name: name
+                type: VARCHAR(255)
+                constraints:
+                  nullable: false
+                  unique: true
+            - column:
+                name: password
+                type: VARCHAR(255)
+                constraints:
+                  nullable: false
+            - column:
+                name: created_at
+                type: TIMESTAMPTZ
+                defaultValueComputed: now()
+                constraints:
+                  nullable: false
+            - column:
+                name: updated_at
+                type: TIMESTAMPTZ
+                defaultValueComputed: now()
+                constraints:
+                  nullable: false
