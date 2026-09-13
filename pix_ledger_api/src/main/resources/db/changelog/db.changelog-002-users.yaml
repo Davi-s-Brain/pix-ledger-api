@@ -37,3 +37,16 @@ databaseChangeLog:
                 defaultValueComputed: now()
                 constraints:
                   nullable: false
+  - changeSet:
+      id: 002-users-seed
+      author: davib
+      changes:
+        - insert:
+            tableName: users
+            columns:
+            - column:
+                name: name
+                value: admin
+            - column:
+                name: password
+                value: "$2a$10$/JV6KgflxtBVzNfakJL5q.D20Ftd8NYgBALoBP0isBdf/F3Ulbdc."

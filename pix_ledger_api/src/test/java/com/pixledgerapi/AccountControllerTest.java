@@ -1,5 +1,7 @@
 package com.pixledgerapi;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pixledgerapi.model.Account;
 import com.pixledgerapi.model.LedgerEntry;
 import com.pixledgerapi.repository.AccountRepository;
@@ -36,6 +38,18 @@ class AccountControllerTest {
     @Autowired
     private LedgerEntryRepository ledgerEntryRepository;
 
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    private String bearerToken() throws Exception {
+        String body = mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"admin\",\"password\":\"admin123\"}"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        JsonNode json = objectMapper.readTree(body);
+        return "Bearer " + json.get("accessToken").asText();
+    }
+
     @BeforeEach
     void cleanDb() {
         ledgerEntryRepository.deleteAll();
@@ -45,6 +59,7 @@ class AccountControllerTest {
     @Test
     void createAccount_persistsAndReturns201() throws Exception {
         mockMvc.perform(post("/api/v1/accounts")
+                        .header("Authorization", bearerToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"ownerName\":\"Davi\"}"))
                 .andExpect(status().isCreated())
@@ -60,6 +75,7 @@ class AccountControllerTest {
     @Test
     void createAccount_invalidPayload_returns400() throws Exception {
         mockMvc.perform(post("/api/v1/accounts")
+                        .header("Authorization", bearerToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isBadRequest());
@@ -80,6 +96,7 @@ class AccountControllerTest {
         }
 
         mockMvc.perform(get("/api/v1/accounts/{id}/ledger", account.getId())
+                        .header("Authorization", bearerToken())
                         .param("page", "0")
                         .param("size", "2"))
                 .andExpect(status().isOk())
@@ -90,7 +107,8 @@ class AccountControllerTest {
 
     @Test
     void getLedger_unknownAccount_returns404() throws Exception {
-        mockMvc.perform(get("/api/v1/accounts/{id}/ledger", UUID.randomUUID()))
+        mockMvc.perform(get("/api/v1/accounts/{id}/ledger", UUID.randomUUID())
+                        .header("Authorization", bearerToken()))
                 .andExpect(status().isNotFound());
     }
 }
