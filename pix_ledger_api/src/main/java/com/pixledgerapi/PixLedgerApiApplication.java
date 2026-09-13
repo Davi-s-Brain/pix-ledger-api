@@ -1,13 +1,13 @@
-package com.pix_ledger_api.project;
+package com.pixledgerapi;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class ProjectApplication {
+public class PixLedgerApiApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(ProjectApplication.class, args);
+		SpringApplication.run(PixLedgerApiApplication.class, args);
 	}
 
 }

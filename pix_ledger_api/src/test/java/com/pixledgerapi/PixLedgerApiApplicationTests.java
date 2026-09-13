@@ -1,12 +1,12 @@
-package com.pix_ledger_api.project;
+package com.pixledgerapi;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 
 @Import(TestcontainersConfiguration.class)
-@SpringBootTest
-class ProjectApplicationTests {
+@SpringBootTest(classes = PixLedgerApiApplication.class)
+class PixLedgerApiApplicationTests {
 
 	@Test
 	void contextLoads() {

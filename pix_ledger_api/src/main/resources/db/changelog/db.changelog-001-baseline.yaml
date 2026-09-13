@@ -1,0 +1,115 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-baseline
+      author: davib
+      changes:
+        - createTable:
+            tableName: accounts
+            remarks: Conta titular de entries no ledger
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: owner_name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(20)
+                  defaultValue: ACTIVE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: balance
+                  type: NUMERIC(19, 2)
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMPTZ
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMPTZ
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+
+        - createTable:
+            tableName: ledger_entries
+            remarks: Registro imutavel (append-only) de credito ou debito de uma conta
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: account_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: entry_type
+                  type: VARCHAR(10)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: amount
+                  type: NUMERIC(19, 2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: VARCHAR(255)
+              - column:
+                  name: created_at
+                  type: TIMESTAMPTZ
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+
+        - addForeignKeyConstraint:
+            baseTableName: ledger_entries
+            baseColumnNames: account_id
+            referencedTableName: accounts
+            referencedColumnNames: id
+            constraintName: fk_ledger_entries_account
+            onDelete: RESTRICT
+
+        - createIndex:
+            tableName: ledger_entries
+            indexName: idx_ledger_entries_account_created
+            columns:
+              - column:
+                  name: account_id
+              - column:
+                  name: created_at
+
+        - sql:
+            sql: |-
+              ALTER TABLE accounts
+                ADD CONSTRAINT ck_accounts_status CHECK (status IN ('ACTIVE', 'BLOCKED', 'CLOSED'));
+              ALTER TABLE accounts
+                ADD CONSTRAINT ck_accounts_balance_non_negative CHECK (balance >= 0);
+              ALTER TABLE ledger_entries
+                ADD CONSTRAINT ck_ledger_entry_type CHECK (entry_type IN ('CREDIT', 'DEBIT'));
+              ALTER TABLE ledger_entries
+                ADD CONSTRAINT ck_ledger_amount_positive CHECK (amount > 0);
